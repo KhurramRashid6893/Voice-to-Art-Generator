@@ -1,0 +1,6 @@
+Flask
+google-generativeai
+requests
+pillow
+gunicorn
+google-genai

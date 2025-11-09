@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice to Art — AI Generator 🎨</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f8f9fa; /* Lighter background */
+      color: #333;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+      margin-bottom: 24px;
+      border: 1px solid #eee;
+    }
+    textarea, select {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-family: "Poppins", sans-serif;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 8px;
+      box-sizing: border-box; /* Important for padding to work with 100% width */
+      background: #fdfdfd;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    textarea:focus, select:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 8px rgba(0,123,255,0.2);
+      outline: none;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      flex-grow: 1;
+      background: linear-gradient(145deg, #007bff, #0056b3);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+    }
+    button:hover {
+      background: linear-gradient(145deg, #0069d9, #004a99);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,123,255,0.4);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    /* --- Improved Mic Button --- */
+    #voiceBtn {
+      flex-grow: 0; /* Don't stretch */
+      flex-basis: 60px; /* Fixed width */
+      font-size: 24px; /* Larger icon */
+      padding: 10px 16px; /* Taller */
+      background: linear-gradient(145deg, #6c757d, #495057);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    #voiceBtn:hover {
+      background: linear-gradient(145deg, #5a6268, #343a40);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    /* --- New Generated Image Section --- */
+    #generation-result {
+      display: none; /* Hidden by default */
+      margin-top: 20px;
+    }
+    #generation-result h3 {
+      text-align: center;
+    }
+    #new-image {
+      width: 100%;
+      max-width: 600px;
+      margin: 10px auto 0;
+      display: block;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    /* --- New Download Section --- */
+    #download-section {
+        display: none;
+        text-align: center;
+        margin-top: 15px;
+    }
+    #downloadBtn {
+        background: linear-gradient(145deg, #28a745, #1e7e34);
+        box-shadow: 0 2px 5px rgba(40,167,69,0.3);
+        max-width: 250px; /* Stop it from stretching full-width */
+        flex-grow: 0;
+    }
+    #downloadBtn:hover {
+        background: linear-gradient(145deg, #218838, #155724);
+        box-shadow: 0 4px 8px rgba(40,167,69,0.4);
+    }
+    #download-status {
+        font-size: 14px;
+        color: #555;
+        margin-top: 8px;
+    }
+
+
+    /* --- Gallery Button & Container --- */
+    #toggleGalleryBtn {
+      width: 100%;
+      background: linear-gradient(145deg, #17a2b8, #117a8b);
+      box-shadow: 0 2px 5px rgba(23,162,184,0.3);
+    }
+    #toggleGalleryBtn:hover {
+      background: linear-gradient(145deg, #138496, #0f6674);
+      box-shadow: 0 4px 8px rgba(23,162,184,0.4);
+    }
+    #gallery-container {
+      display: none; /* Gallery is hidden by default */
+    }
+    
+    /* Gallery Grid */
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    #gallery img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover; /* Ensures images are uniform */
+      margin: 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+    }
+    #gallery img:hover {
+        transform: scale(1.05);
+    }
+
+    /* Status message styling */
+    .status {
+      font-size: 14px;
+      color: #555;
+      margin-top: 15px;
+      white-space: pre-wrap;
+      padding: 12px;
+      border-radius: 6px;
+      display: none; /* Hide by default */
+    }
+    .status.loading {
+      background: #e6f7ff;
+      border: 1px solid #b3e0ff;
+      color: #0056b3;
+      display: block;
+    }
+    .status.success {
+      background: #e6ffed;
+      border: 1px solid #b3ffc6;
+      color: #006421;
+      display: block;
+    }
+    .status.error {
+      background: #ffeee6;
+      border: 1px solid #ffc6b3;
+      color: #b32d00;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Voice to Art Generator</h1>
+    <div class="card">
+      <label for="prompt"><b>Enter your idea or speak:</b></label><br>
+      <textarea id="prompt" rows="3" placeholder="E.g., A dream of stars..."></textarea>
+
+      <label for="mode" style="margin-top: 15px; display: block;"><b>Choose Art Mode:</b></label>
+      <select id="mode">
+        <option value="normal">🎨 Normal Art</option>
+        <option value="pattern">🌌 Pattern Design (Born from your voice)</option>
+      </select>
+
+      <div class="button-group">
+        <button id="generateBtn">Generate</button>
+        <button id="voiceBtn" title="Speak your prompt">🎤</button>
+      </div>
+      <div id="status" class="status"></div>
+
+      <div id="generation-result">
+        <h3>Your New Art</h3>
+        <img id="new-image" alt="Newly generated art" />
+        
+        <div id="download-section">
+          <button id="downloadBtn">Download Image</button>
+          <div id="download-status"></div>
+        </div>
+        </div>
+
+    </div>
+
+    <div class="card">
+      <button id="toggleGalleryBtn">Click to show gallery</button>
+      
+      <div id="gallery-container">
+        <h3>Gallery</h3>
+        <div id="gallery">
+          {% for img in images %}
+            <img src="{{ url_for('gallery', filename=img.split('/')[-1]) }}" alt="Generated Art" />
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const btn = document.getElementById("generateBtn");
+    const voiceBtn = document.getElementById("voiceBtn");
+    const promptEl = document.getElementById("prompt");
+    const modeEl = document.getElementById("mode");
+    const statusEl = document.getElementById("status");
+    
+    // --- New Element Selectors ---
+    const generationResultEl = document.getElementById("generation-result");
+    const newImageEl = document.getElementById("new-image");
+    const toggleGalleryBtn = document.getElementById("toggleGalleryBtn");
+    const galleryContainer = document.getElementById("gallery-container");
+
+    // --- *** NEW DOWNLOAD SELECTORS *** ---
+    const downloadSection = document.getElementById("download-section");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const downloadStatus = document.getElementById("download-status");
+
+
+    let loadingInterval;
+    const loadingMessages = [
+      "🎨 Generating your art...",
+      "🖌️ Mixing the colors...",
+      "✨ Adding a touch of magic...",
+      "🧘 Relax, this can take a moment...",
+      "🖼️ Framing the masterpiece..."
+    ];
+
+    /**
+     * Sets the status message and style.
+     * @param {string} message The text to display.
+     * @param {'loading' | 'success' | 'error' | null} type The style of message.
+     */
+    function setStatus(message, type = 'loading') {
+      statusEl.textContent = message;
+      statusEl.className = 'status'; // Reset classes
+      if (type) {
+        statusEl.classList.add(type);
+      }
+    }
+
+    async function generate(prompt, mode) {
+      // --- *** HIDE DOWNLOAD SECTION ON NEW GENERATION *** ---
+      downloadSection.style.display = "none";
+      downloadStatus.textContent = "";
+
+      // Start interactive loading
+      if (loadingInterval) clearInterval(loadingInterval);
+      let msgIndex = 0;
+      setStatus(loadingMessages[msgIndex], "loading");
+      loadingInterval = setInterval(() => {
+        msgIndex = (msgIndex + 1) % loadingMessages.length;
+        setStatus(loadingMessages[msgIndex], "loading");
+      }, 2500); // Change message every 2.5 seconds
+      
+      btn.disabled = true;
+      voiceBtn.disabled = true;
+
+      try {
+        const res = await fetch("/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, mode })
+        });
+        
+        clearInterval(loadingInterval); // Stop loading messages
+        const js = await res.json();
+        
+        if (res.ok) {
+          // Show the new image
+          setStatus("✅ Success! Your art is below.", "success");
+          newImageEl.src = `/static/${js.image}`;
+          generationResultEl.style.display = "block";
+          
+          // --- *** SHOW DOWNLOAD SECTION *** ---
+          downloadSection.style.display = "block";
+          downloadBtn.dataset.imageUrl = newImageEl.src; // Store image src
+          downloadStatus.textContent = ""; // Clear any old status
+          
+        } else {
+          // Show user-friendly error
+          setStatus("⚠️ Oops! Something went wrong. Please try again.", "error");
+        }
+      } catch (err) {
+        clearInterval(loadingInterval); // Stop loading on error
+        setStatus("⚠️ Network error. Please check your connection.", "error");
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        voiceBtn.disabled = false;
+      }
+    }
+
+    btn.addEventListener("click", () => {
+      const prompt = promptEl.value.trim();
+      const mode = modeEl.value;
+      if (!prompt) {
+        setStatus("Please enter a prompt.", "error");
+        return;
+      }
+      generate(prompt, mode);
+    });
+
+    // --- New Event Listener for Gallery Toggle ---
+    toggleGalleryBtn.addEventListener("click", () => {
+      const isHidden = galleryContainer.style.display === "none";
+      if (isHidden) {
+        galleryContainer.style.display = "block";
+        toggleGalleryBtn.textContent = "Hide gallery";
+      } else {
+        galleryContainer.style.display = "none";
+        toggleGalleryBtn.textContent = "Click to show gallery";
+      }
+    });
+    
+    // --- *** NEW DOWNLOAD BUTTON LISTENER *** ---
+    downloadBtn.addEventListener("click", () => {
+      const imageUrl = downloadBtn.dataset.imageUrl;
+      if (!imageUrl) return;
+
+      // 1. Prompt for name
+      let filename = prompt("Please enter a name for your art:", "my-new-art");
+      
+      if (filename === null) { // User clicked cancel
+        return;
+      }
+      
+      filename = filename.trim();
+      
+      if (filename === "") { // User entered empty string
+        filename = "my-new-art"; // Default name
+      }
+      
+      // 2. Sanitize and add extension
+      filename = filename.replace(/[\s/\\?%*:|"<>]/g, '_') + ".png"; 
+
+      // 3. Download logic
+      downloadStatus.textContent = "Preparing download...";
+      fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = filename; // Set the user-provided filename
+          
+          document.body.appendChild(a);
+          a.click(); // Trigger the download
+          
+          // Clean up
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+
+          // 4. Show message
+          downloadStatus.textContent = `Downloaded as "${filename}"!`;
+        })
+        .catch(err => {
+          console.error("Download failed:", err);
+          downloadStatus.textContent = "Download failed.";
+        });
+    });
+
+
+    // Driver code for 🎤 Voice recognition
+    let recognition;
+    if ("webkitSpeechRecognition" in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.onstart = () => {
+        setStatus("🎙️ Listening...", "loading");
+      };
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        promptEl.value = transcript;
+        setStatus(`🗣️ You said: "${transcript}"`, "success");
+      };
+      recognition.onerror = () => {
+        setStatus("🎤 Voice recognition failed. Please type.", "error");
+      };
+    } else {
+      voiceBtn.disabled = true;
+      voiceBtn.title = "Voice recognition not supported in this browser";
+    }
+
+    voiceBtn.addEventListener("click", () => {
+      if (recognition) {
+        recognition.start();
+      }
+    });
+  </script>
+</body>
+</html>
